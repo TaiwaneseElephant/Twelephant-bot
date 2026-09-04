@@ -127,7 +127,7 @@ def archive(archive_page_name:str, site, archive_list:list, sections, talk_page_
         else:
             return 0, archive_list
 
-def del_archived(site, talk_page, del_list:set, unarchived:list = [], counter_used:bool = False, counter:int = 0, new_counter:int = 0, work_template_name:str = "", work_page_name:str = ""):
+def del_archived(site, talk_page, del_list:set, unarchived:list = [], counter_used:bool = False, counter:int = 0, new_counter:int = 0, work_template_name:str = ""):
     talk_page.get(force = True, get_redirect = True)
     sections = textlib.extract_sections(talk_page.text, site)
     new_page_text = "".join(f"{sections.sections[i].title}{sections.sections[i].content}" for i in range(len(sections.sections)) if (i not in del_list) or (i in unarchived))
@@ -140,20 +140,10 @@ def del_archived(site, talk_page, del_list:set, unarchived:list = [], counter_us
             old_template = str(template)
             template.add("counter", str(new_counter), preserve_spacing = True)
             text = str(text)
-            work_page = pywikibot.Page(site, work_page_name)
-            page_list = json.loads(work_page.text)
-            page_list[talk_page.title()]["counter"] = new_counter
-        else:
-            work_page = pywikibot.Page(site, work_page_name)
-            page_list = json.loads(work_page.text)
-            if talk_page.title() in page_list:
-                del page_list[talk_page.title()]
-        json_text = json.dumps(page_list, ensure_ascii = False, indent = 4, sort_keys = True)
-        save(site, work_page, json_text, "Updated by Twelephant-bot")
     save(site, talk_page, text, f"Archived {len(del_list) - len(unarchived)} threads by Twelephant-bot")
 
 def archive_page(page_name:str, site, archive_page_name:str = "%(page)s/存檔%(counter)d", archive_time:list = ["old", 86400], counter:int = 1, minthreadsleft:int = 5, minthreadstoarchive:int = 2, \
-                 archiveheader:str = "{{talkarchive}}", maxarchivesize:[str, int] = ["Bytes", 1000000000], custom_rules:list = [], work_page_name:str = "", work_template_name:str = "", **kwargs):
+                 archiveheader:str = "{{talkarchive}}", maxarchivesize:[str, int] = ["Bytes", 1000000000], custom_rules:list = [], work_template_name:str = "", **kwargs):
     talk_page = pywikibot.Page(site, page_name)
     timestripper = textlib.TimeStripper(site)
     sections = textlib.extract_sections(talk_page.text, site)
@@ -308,7 +298,7 @@ def archive_page(page_name:str, site, archive_page_name:str = "%(page)s/存檔%(
                             header = archiveheader, counter_used = True, counter = counter, maxarchivesize = maxarchivesize)
             unarchived.extend(result[1])
             new_counter = result[0]
-            del_archived(site, talk_page, del_list, unarchived, True, counter, new_counter, work_template_name, work_page_name)
+            del_archived(site, talk_page, del_list, unarchived, True, counter, new_counter, work_template_name)
 
         elif date_used:
             for i, j in archive_list.items():
@@ -322,8 +312,8 @@ def archive_page(page_name:str, site, archive_page_name:str = "%(page)s/存檔%(
             del_archived(site, talk_page, del_list)
         print(f"Archived '{title}'", flush = True)
 
-def get_page_list(site, work_page_name:str, work_template_name:str) -> dict:
-    page_list = pywikibot.Page(site, work_template_name).getReferences(follow_redirects = False, only_template_inclusion = True, namespaces = 3, content = True)
+def get_page_list(site, work_template_name:str) -> dict:
+    page_list = pywikibot.Page(site, work_template_name).embeddedin(follow_redirects = False, namespaces = 3, content = True)
     result = {}
     default = {"archive_page_name":"%(page)s/存檔%(counter)d", "archive_time" : ["old", 86400], "counter" : 1, "maxarchivesize" : ["Bytes", 1000000000], \
                "minthreadsleft" : 5, "minthreadstoarchive" : 2, "archiveheader" : "{{talkarchive}}", "custom_rules" : {}}
@@ -399,12 +389,9 @@ def get_page_list(site, work_page_name:str, work_template_name:str) -> dict:
                     result[title]["custom_rules"][key] = [option_rules[key], "last", [var2, int(var1)]]
         result[title]["archive_page_name"] = result[title]["archive_page_name"].replace("%(page)s", title)
         result[title]["archiveheader"] = result[title]["archiveheader"].replace("%(page)s", title)
-    work_page = pywikibot.Page(site, work_page_name)
     old_page_list = json.loads(work_page.text)
     if old_page_list != result:
         welcome_newcomers(result, old_page_list, site)
-        text = json.dumps(result, ensure_ascii = False, indent = 4)
-        save(site, work_page, text, "Updated by Twelephant-bot")
     return result
 
 def send_message(site, talk_page_name:str, message:str, summary:str = "message send by twelephant-bot"):
@@ -423,22 +410,23 @@ def welcome_newcomers(new_page_list:dict, old_page_list:dict, site):
 def check_switch(site, switch_page_name:str) -> bool:
     try:
         switch_page = pywikibot.Page(site, switch_page_name)
-        return json.loads(switch_page.text)["Archive User talk page"]["Enable"]
+        return json.loads(switch_page.text)["Enable"]
     except:
         return False
 
 def run():
     print("Run!")
     site = pywikibot.Site('wikipedia:zh')
-    work_page_name = "User:Twelephant-bot/Work page.json"
-    work_template_name = "User:Twelephant-bot/Archive"
-    if check_switch(site, "User:Twelephant-bot/setting.json"):
+    config_page_name = "User:Twelephant-bot/task/1/config.json"
+    config = pywikibot.Page(site, config_page_name)
+    work_template_name = config["template"]
+    if check_switch(site, "User:Twelephant-bot/task/1/config.json"):
         print("Start!")
-        page_list = get_page_list(site, work_page_name, work_template_name)
+        page_list = get_page_list(site, work_template_name)
         for page, pref in page_list.items():
-            if check_switch(site, "User:Twelephant-bot/setting.json"):
+            if check_switch(site, config_page_name):
                 try:
-                    archive_page(page, site = site, work_page_name = work_page_name, work_template_name = work_template_name, **pref)
+                    archive_page(page, site = site, work_template_name = work_template_name, **pref)
                     print(page)
                 except  Exception as e:
                     print(f"Skipped page '{page}', its prefercence is {pref}, and the error is '{e}'")

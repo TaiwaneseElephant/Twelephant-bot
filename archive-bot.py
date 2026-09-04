@@ -313,7 +313,7 @@ def archive_page(page_name:str, site, archive_page_name:str = "%(page)s/存檔%(
         print(f"Archived '{title}'", flush = True)
 
 def get_page_list(site, work_template_name:str) -> dict:
-    page_list = pywikibot.Page(site, work_template_name).embeddedin(follow_redirects = False, namespaces = 3, content = True)
+    page_list = pywikibot.Page(site, work_template_name).embeddedin(filter_redirects = False, namespaces = 3, content = True)
     result = {}
     default = {"archive_page_name":"%(page)s/存檔%(counter)d", "archive_time" : ["old", 86400], "counter" : 1, "maxarchivesize" : ["Bytes", 1000000000], \
                "minthreadsleft" : 5, "minthreadstoarchive" : 2, "archiveheader" : "{{talkarchive}}", "custom_rules" : {}}

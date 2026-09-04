@@ -421,7 +421,7 @@ def run():
     print("Run!")
     site = pywikibot.Site('wikipedia:zh')
     config_page_name = "User:Twelephant-bot/task/1/config.json"
-    config = pywikibot.Page(site, config_page_name)
+    config = json.loads(pywikibot.Page(site, config_page_name).text)
     work_template_name = config["template"]
     if check_switch(site, "User:Twelephant-bot/task/1/config.json"):
         print("Start!")

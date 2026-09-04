@@ -31,7 +31,7 @@ def save(site, page, text:str, summary:str = "", add:bool = False, minor:bool = 
                 page.text = textlib.add_text(oringinal_text, text, site = site)
             else:
                 page.text = text
-            page.save(summary, minor = minor)
+            page.save(summary, minor = minor, bot = True)
             return True
         except pywikibot.exceptions.EditConflictError as e:
             print(f"Warning! There is an edit conflict on page '{page.title()}'!")

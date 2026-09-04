@@ -392,23 +392,7 @@ def get_page_list(site, work_template_name:str) -> dict:
                     result[title]["custom_rules"][key] = [re.compile(option_rules[key]), "last", [var2, int(var1)]]
         result[title]["archive_page_name"] = result[title]["archive_page_name"].replace("%(page)s", title)
         result[title]["archiveheader"] = result[title]["archiveheader"].replace("%(page)s", title)
-    old_page_list = json.loads(work_page.text)
-    if old_page_list != result:
-        welcome_newcomers(result, old_page_list, site)
     return result
-
-def send_message(site, talk_page_name:str, message:str, summary:str = "message send by twelephant-bot"):
-    talk_page = pywikibot.Page(site, talk_page_name)
-    save(site, talk_page, message, summary, add = True, minor = False)
-
-def send_welcome_message(talk_page_name:str, site):
-    send_message(site, talk_page_name, "{{subst:User:Twelephant-bot/welcome message}}", "Welcoming user for using Twelephant-bot user talk page archive service by Twelephant-bot.")
-
-def welcome_newcomers(new_page_list:dict, old_page_list:dict, site):
-    bots = []
-    for i in new_page_list.keys():
-        if i not in old_page_list.keys():
-            send_welcome_message(i, site)
 
 def check_switch(site, switch_page_name:str) -> bool:
     try:

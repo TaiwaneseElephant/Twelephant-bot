@@ -188,7 +188,7 @@ def archive_page(page_name:str, site, archive_page_name:str = "%(page)s/存檔%(
             if custom_rules != {}:
                 for rule_name, value in custom_rules.items():
                     rule, custom_time_type, custom_standard = value
-                    if re.match(rule, title):
+                    if rule.match(title):
                         if custom_time_type == "old":
                             for j in signature_timestamp:
                                 time_then = timestripper.timestripper(j).timetuple()
@@ -370,12 +370,15 @@ def get_page_list(site, work_template_name:str) -> dict:
                 rule_name = f"custom:{var.groups()[0]}"
                 var = re.match(r"(.*?);(old|last)\s*\(\s*(\d+)\s*([ymwdh])\s*\)$", item)
                 if var:
-                    var1, var2, var3, var4 = var.groups()
-                    if var2 == "old" and var4 in ("w", "d", "h"):
-                        var = {"w":604800, "d":86400, "h":3600}
-                        result[title]["custom_rules"][rule_name] = [var1, "old", int(var3) * var[var4]]
-                    elif var2 == "last" and var4 in ("y", "m", "d"):
-                        result[title]["custom_rules"][rule_name] = [var1, "last", [var4, int(var3)]]
+                    try:
+                        var1, var2, var3, var4 = var.groups()
+                        if var2 == "old" and var4 in ("w", "d", "h"):
+                            var = {"w":604800, "d":86400, "h":3600}
+                            result[title]["custom_rules"][rule_name] = [re.compile(var1), "old", int(var3) * var[var4]]
+                        elif var2 == "last" and var4 in ("y", "m", "d"):
+                            result[title]["custom_rules"][rule_name] = [re.compile(var1), "last", [var4, int(var3)]]
+                    except re.PatternError:
+                        pass
             elif key in option_rules:
                 item = item.replace(" ", "").lower()
                 match1 = re.match(r"old\((\d+)([wdh])\)", item)
@@ -383,10 +386,10 @@ def get_page_list(site, work_template_name:str) -> dict:
                 if match1:
                     var = {"w":604800, "d":86400, "h":3600}
                     var1, var2 = match1.groups()
-                    result[title]["custom_rules"][key] = [option_rules[key], "old", int(var1) * var[var2]]
+                    result[title]["custom_rules"][key] = [re.compile(option_rules[key]), "old", int(var1) * var[var2]]
                 elif match2:
                     var1, var2 = match2.groups()
-                    result[title]["custom_rules"][key] = [option_rules[key], "last", [var2, int(var1)]]
+                    result[title]["custom_rules"][key] = [re.compile(option_rules[key]), "last", [var2, int(var1)]]
         result[title]["archive_page_name"] = result[title]["archive_page_name"].replace("%(page)s", title)
         result[title]["archiveheader"] = result[title]["archiveheader"].replace("%(page)s", title)
     old_page_list = json.loads(work_page.text)
